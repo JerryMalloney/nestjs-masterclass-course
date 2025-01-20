@@ -1,7 +1,17 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { PostType } from './enums/postType.enum';
 import { postStatus } from './enums/postStatus.enum';
-import { CreatePostDto } from './dtos/create-post.dto';
+import { MetaOption } from 'src/meta-options/meta-options.entity';
+import { User } from 'src/users/user.entity';
+import { Tag } from 'src/tags/tag.entity';
 
 @Entity()
 export class Post {
@@ -43,20 +53,20 @@ export class Post {
     type: 'text',
     nullable: true,
   })
-  content: string;
+  content?: string;
 
   @Column({
     type: 'text',
     nullable: true,
   })
-  schema: string;
+  schema?: string;
 
   @Column({
     type: 'varchar',
     length: 1024,
     nullable: true,
   })
-  featuredImageUrl: string;
+  featuredImageUrl?: string;
 
   @Column({
     type: 'timestamp',
@@ -65,6 +75,20 @@ export class Post {
   publishOn: Date;
 
   /** Todo */
-  tags: string[];
-  metaOptions: CreatePostDto[];
+  @OneToOne(() => MetaOption, (metaOptions) => metaOptions.post, {
+    cascade: true,
+    eager: true,
+  })
+  metaOptions?: MetaOption;
+
+  @ManyToOne(() => User, (user) => user.posts, {
+    eager: true,
+  })
+  author: User;
+
+  @ManyToMany(() => Tag, (tag) => tag.posts, {
+    eager: true,
+  })
+  @JoinTable()
+  tags?: Tag[];
 }

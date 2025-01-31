@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   Body,
   Injectable,
+  Query,
   RequestTimeoutException,
 } from '@nestjs/common';
 import { UsersService } from 'src/users/providers/users.service';
@@ -12,6 +13,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MetaOption } from 'src/meta-options/meta-options.entity';
 import { TagsService } from 'src/tags/providers/tags.service';
 import { PatchPostDto } from '../dtos/patch-post.dto';
+import { GetPostsDto } from '../dtos/get-posts.dto';
+import { PaginationProvider } from 'src/common/pagination/providers/pagination.provider';
+import { Paginated } from 'src/common/pagination/interfaces/paginated.interface';
 
 @Injectable()
 export class PostsService {
@@ -22,13 +26,14 @@ export class PostsService {
     @InjectRepository(MetaOption)
     private readonly metaOptionsRepository: Repository<MetaOption>,
     private readonly tagsService: TagsService,
+    private readonly paginationProvider: PaginationProvider,
   ) {}
 
   /**
    *   Creating new posts
    */
 
-  public async create(@Body() createPostDto: CreatePostDto) {
+  public async create(createPostDto: CreatePostDto) {
     const author = await this.usersService.findOneById(createPostDto.authorId);
 
     const tags = await this.tagsService.findMultipleTags(createPostDto.tags);
@@ -42,13 +47,17 @@ export class PostsService {
     return await this.postRepository.save(post);
   }
 
-  public async findAll(userId: string) {
-    const posts = await this.postRepository.find({
-      relations: {
-        metaOptions: true,
-        // tags: true,
+  public async findAll(
+    postQuery: GetPostsDto,
+    userId: string,
+  ): Promise<Paginated<Post>> {
+    const posts = await this.paginationProvider.paginateQuery(
+      {
+        limit: postQuery.limit,
+        page: postQuery.page,
       },
-    });
+      this.postRepository,
+    );
     return posts;
   }
 

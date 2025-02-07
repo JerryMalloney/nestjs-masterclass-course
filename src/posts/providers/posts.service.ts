@@ -16,6 +16,8 @@ import { PatchPostDto } from '../dtos/patch-post.dto';
 import { GetPostsDto } from '../dtos/get-posts.dto';
 import { PaginationProvider } from 'src/common/pagination/providers/pagination.provider';
 import { Paginated } from 'src/common/pagination/interfaces/paginated.interface';
+import { CreatePostProvider } from './create-post.provider';
+import { ActiveUserData } from 'src/auth/interfaces/active-user-data.interface';
 
 @Injectable()
 export class PostsService {
@@ -27,24 +29,15 @@ export class PostsService {
     private readonly metaOptionsRepository: Repository<MetaOption>,
     private readonly tagsService: TagsService,
     private readonly paginationProvider: PaginationProvider,
+    private readonly createPostProvider: CreatePostProvider,
   ) {}
 
   /**
    *   Creating new posts
    */
 
-  public async create(createPostDto: CreatePostDto) {
-    const author = await this.usersService.findOneById(createPostDto.authorId);
-
-    const tags = await this.tagsService.findMultipleTags(createPostDto.tags);
-
-    const post = this.postRepository.create({
-      ...createPostDto,
-      author: author,
-      tags,
-    });
-
-    return await this.postRepository.save(post);
+  public async create(createPostDto: CreatePostDto, user: ActiveUserData) {
+    return this.createPostProvider.create(createPostDto, user);
   }
 
   public async findAll(

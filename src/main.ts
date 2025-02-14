@@ -2,7 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { DataResponseInterceptor } from './common/interceptors/data-response/data-response.interceptor';
+import { ConfigService } from '@nestjs/config';
+import { config } from 'aws-sdk';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,10 +18,20 @@ async function bootstrap() {
     }),
   );
 
+  // setup aws sdk for uploading files
+  const configService = app.get(ConfigService);
+  config.update({
+    credentials: {
+      accessKeyId: configService.get('appConfig.awsAccessKeyId'),
+      secretAccessKey: configService.getOrThrow('appConfig.awsSecretAccessKey'),
+    },
+    region: configService.get('awsRegion'),
+  });
+
   /**
    * swagger configuration
    */
-  const config = new DocumentBuilder()
+  const swaggerConfig = new DocumentBuilder()
     .setTitle('Nestjs Masterclass - Blog app API')
     .setDescription('Use the base API URL as http://localhost:3000')
     .setTermsOfService('http://localhost:3000/terms')
@@ -29,7 +40,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   // instantiate Document
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
